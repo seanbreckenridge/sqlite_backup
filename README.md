@@ -10,7 +10,7 @@ The main purpose for writing this is to copy sqlite databases that you may not o
 
 ### Features
 
-- Has the option (true by default) to first atomically copy the database from disk to a temporary directory, which is:
+- Has the option (true by default) to first safely copy the database from disk to a temporary directory, which is:
   - useful in case the source is in read-only mode (e.g. in some sort of docker container)
   - safer if you're especially worried about corrupting or losing data
 - Uses [`Cpython`s conn.backup](https://github.com/python/cpython/blob/main/Modules/_sqlite/connection.c#L1716), which directly uses the [underlying Sqlite C code](https://www.sqlite.org/c3ref/backup_finish.html)
