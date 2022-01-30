@@ -15,7 +15,7 @@ The main purpose for writing this is to copy sqlite databases that you may not o
   - safer if you're especially worried about corrupting or losing data
 - Uses [`Cpython`s conn.backup](https://github.com/python/cpython/blob/main/Modules/_sqlite/connection.c#L1716), which directly uses the [underlying Sqlite C code](https://www.sqlite.org/c3ref/backup_finish.html)
 
-In short, this prioritizes safety of the data over speed or performance -- because we often don't know what the application may be doing while we're copying underlying sqlite databases
+In short, this **prioritizes safety of the data** over performance, temporarily copied data files to `/tmp` or memory usage - because we often don't know what the application may be doing while we're copying underlying sqlite databases
 
 This was extracted out of the [`karlicoss/HPI`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) `sqlite` module
 
