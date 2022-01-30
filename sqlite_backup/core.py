@@ -6,8 +6,6 @@ from typing import Union, Optional, List, Iterable, Tuple, Dict, Any
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from atomicwrites import atomic_write
-
 
 PathIsh = Union[str, Path]
 
