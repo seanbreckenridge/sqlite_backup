@@ -17,7 +17,7 @@ The main purpose for writing this is to copy sqlite databases that you may not o
 
 In short, this **prioritizes safety of the data** over performance, temporarily copied data files to `/tmp` or memory usage - because we often don't know what the application may be doing while we're copying underlying sqlite databases
 
-This was extracted out of the [`karlicoss/HPI`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) `sqlite` module
+The initial `Connection.backup` was extracted out of the [`karlicoss/HPI`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) `core/sqlite` module
 
 If other tools exist to do this, please [let me know!](https://github.com/seanbreckenridge/sqlite_backup/issues/new)
 
