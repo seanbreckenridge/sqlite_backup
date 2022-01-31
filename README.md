@@ -1,6 +1,6 @@
 ## WORK IN PROGRESS
 
-The [core](./sqlite_backup/core.py) here is my first attempt at a solution of this, combining ideas from [browser_history.py](https://github.com/karlicoss/promnesia/blob/0e1e9a1ccd1f07b2a64336c18c7f41ca24fcbcd4/scripts/browser_history.py) and [`karlicoss/HPI/sqlite.py`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) to create a library/CLI tool to (as safely as possible) copy databases which may be in use from other applications
+See [issues](https://github.com/seanbreckenridge/sqlite_backup/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) for whats left; the core [`sqlite_backup`](./docs/sqlite_backup/core.md) works and is covered by [tests](./tests/test_sqlite_backup.py)
 
 # sqlite_backup
 
@@ -17,7 +17,7 @@ The main purpose for writing this is to copy sqlite databases that you may not o
 
 In short, this **prioritizes safety of the data** over performance, temporarily copied data files to `/tmp` or memory usage - because we often don't know what the application may be doing while we're copying underlying sqlite databases
 
-The initial `Connection.backup` was extracted out of the [`karlicoss/HPI`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) `core/sqlite` module
+The initial backup function and some tests were extracted out of the [`karlicoss/HPI` `core/sqlite`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) module
 
 If other tools exist to do this, please [let me know!](https://github.com/seanbreckenridge/sqlite_backup/issues/new)
 
