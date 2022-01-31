@@ -54,6 +54,9 @@ def sqlite_with_wal(
 
         yield db
 
+    conn.close()
+    conn_db.close()
+
 
 def test_open_asis(sqlite_with_wal: Path, reraise: Reraise) -> None:
     """
@@ -175,5 +178,6 @@ def test_copy_to_another_file(
         # if we want to access it, just open it again
         with sqlite3.connect(destination_database) as dest_conn:
             assert len(list(dest_conn.execute("SELECT * FROM testtable"))) == 10
+        dest_conn.close()
 
     run_in_thread(_run)

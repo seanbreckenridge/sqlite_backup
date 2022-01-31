@@ -1,5 +1,4 @@
 """
-
 The run_in_thread function is used to automate and sanity
 check running tests in this module
 """

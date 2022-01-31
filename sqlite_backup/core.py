@@ -3,17 +3,23 @@ import filecmp
 import shutil
 import warnings
 
-from typing import Union, Optional, List, Iterable, Tuple, Dict, Any
+from typing import Union, Optional, List, Iterable, Tuple, Dict, Any, Generator
 from pathlib import Path
+from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
 
 PathIsh = Union[str, Path]
 
 
-def _sqlite_connect_immutable(db: PathIsh) -> sqlite3.Connection:
+@contextmanager
+def _sqlite_connect_immutable(db: PathIsh) -> Generator[sqlite3.Connection, None, None]:
     # https://www.sqlite.org/draft/uri.html#uriimmutable
-    return sqlite3.connect(f"file:{db}?immutable=1", uri=True)
+    try:
+        with sqlite3.connect(f"file:{db}?immutable=1", uri=True) as conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 # https://github.com/karlicoss/promnesia/blob/1b26ccdf9be7c0ac8f8e6e9e4193647450548878/scripts/browser_history.py#L48
