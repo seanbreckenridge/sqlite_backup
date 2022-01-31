@@ -15,7 +15,7 @@ PathIsh = Union[str, Path]
 
 
 class SqliteBackupError(RuntimeError):
-    pass
+    """Generic error for the sqlite_backup module"""
 
 
 @contextmanager

@@ -46,3 +46,15 @@ Functions
     'copy_retry' specifies how many times we should attempt to copy the database files, if they
     happen to change while we're doing so. 'copy_retry_strict' throws an error if it didn't happen
     to copy in 'copy_retry' times
+
+Classes
+-------
+
+`SqliteBackupError(*args, **kwargs)`
+:   Unspecified run-time error.
+
+    ### Ancestors (in MRO)
+
+    * builtins.RuntimeError
+    * builtins.Exception
+    * builtins.BaseException
