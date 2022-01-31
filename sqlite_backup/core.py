@@ -1,3 +1,5 @@
+import os
+import errno
 import sqlite3
 import filecmp
 import shutil
@@ -10,6 +12,10 @@ from tempfile import TemporaryDirectory
 
 
 PathIsh = Union[str, Path]
+
+
+class SqliteBackupError(RuntimeError):
+    pass
 
 
 @contextmanager
@@ -114,6 +120,11 @@ def sqlite_backup(
     source_path = Path(source)
     copy_from: Path
 
+    if not source_path.exists():
+        raise FileNotFoundError(
+            errno.ENOENT, os.strerror(errno.ENOENT), str(source_path)
+        )
+
     if sqlite_connect_kwargs is None:
         sqlite_connect_kwargs = {}
 
@@ -129,29 +140,27 @@ def sqlite_backup(
                 glob_database_files(source_path), temporary_dest=tdir, retry=copy_retry
             )
             if not succeeded and copy_retry_strict:
-                raise RuntimeError(
+                raise SqliteBackupError(
                     f"While in strict mode, this failed to copy all files without any of them changing {copy_retry} times. Increase 'copy_retry' or disable 'copy_retry_strict'"
                 )
             copy_from = tdir / source_path.name
-            if not copy_from.exists():
-                raise RuntimeError(
-                    f"Expected copied database to exist at {copy_from} in temporary directory"
-                )
+            assert (
+                copy_from.exists()
+            ), f"Expected copied database to exist at {copy_from} in temporary directory"
         else:
             copy_from = source_path
-            if not copy_from.exists():
-                raise RuntimeError(f"Expected source database to exist at {copy_from}")
             warnings.warn(
-                "Copying a database in use by another application without copying to a temporary directory could result in corrupt data or incorrect results. Only use this if you know the underlying databse is not being modified"
+                "Copying a database in use by another application without copying to a temporary directory could result in corrupt data or incorrect results. Only use this if you know the underlying database is not being modified"
             )
 
         target_connection: sqlite3.Connection
         if destination is None:
             target_connection = sqlite3.connect(":memory:")
         else:
-            assert isinstance(
-                destination, (str, Path)
-            ), f"Unexpected database type, expected path like object, got {type(destination)}"
+            if not isinstance(destination, (str, Path)):
+                raise ValueError(
+                    f"Unexpected 'destination' type, expected path like object, got {type(destination)}"
+                )
             target_connection = sqlite3.connect(destination)
 
         with sqlite3.connect(copy_from, **sqlite_connect_kwargs) as conn:

@@ -181,3 +181,16 @@ def test_copy_to_another_file(
         dest_conn.close()
 
     run_in_thread(_run)
+
+
+def test_database_doesnt_exist(tmp_path: Path, reraise: Reraise) -> None:
+    def _run() -> None:
+        with reraise:
+            sqlite_backup(tmp_path / "db.sqlite")
+
+    run_in_thread(_run, allow_unwrapped=True)
+
+    err = reraise.reset()
+    assert isinstance(err, FileNotFoundError)
+    assert err.filename == str(tmp_path / "db.sqlite")
+    assert "No such file or directory" in err.strerror
