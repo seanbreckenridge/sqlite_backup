@@ -26,6 +26,7 @@ setup(
         "testing": [
             "pytest",
             "mypy",
+            "pytest-reraise",
         ]
     },
     classifiers=[

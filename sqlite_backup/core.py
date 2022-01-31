@@ -1,6 +1,7 @@
 import sqlite3
 import filecmp
 import shutil
+import warnings
 
 from typing import Union, Optional, List, Iterable, Tuple, Dict, Any
 from pathlib import Path
@@ -134,6 +135,9 @@ def sqlite_backup(
             copy_from = source_path
             if not copy_from.exists():
                 raise RuntimeError(f"Expected source database to exist at {copy_from}")
+            warnings.warn(
+                "Copying a database in use by another application without copying to a temporary directory could result in corrupt data or incorrect results. Only use this if you know the underlying databse is not being modified"
+            )
 
         target_connection: sqlite3.Connection
         if destination is None:
@@ -153,6 +157,6 @@ def sqlite_backup(
         if destination is None:
             return target_connection
         else:
-            # destination was a file -- close
+            # destination was a file - close
             target_connection.close()
             return None
