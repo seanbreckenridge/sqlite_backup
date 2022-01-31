@@ -15,7 +15,7 @@ from threading import Thread
 def run_in_thread(func: Callable[[], None], *, allow_unwrapped: bool = False) -> None:
     assert callable(func), "Didn't pass a function to run_in_thread"
     if not allow_unwrapped:
-        # https://github.com/bjoluc/pytest-reraise/blob/main/pytest_reraise/reraise.py#L110
+        # https://github.com/bjoluc/pytest-reraise/blob/a781930ea3af826d0cbc6a8b3411c0a5db063e36/pytest_reraise/reraise.py#L110
         # make sure this is a wrapped func
         assert (
             func.__code__.co_name == "wrapped"
