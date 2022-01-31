@@ -164,7 +164,7 @@ def test_copy_to_another_file(
     Copy from the sqlite_with_wal to another database file -- this
     is pretty similar to test_do_copy_and_open, it just doesn't copy to memory
 
-    we can then open the copied databsae to ensure it has all 10 records
+    We can then open the copied database to ensure it has all 10 records
 
     sqlite_with_wal -> temporary directory ->
     temp_database.backup(other_database) -> sqlite3.connect(other_database)

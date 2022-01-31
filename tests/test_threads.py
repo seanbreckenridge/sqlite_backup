@@ -38,16 +38,16 @@ def test_thread_raises(reraise: Reraise) -> None:
 
     run_in_thread(_run, allow_unwrapped=True)
 
-    # Return the captured exception:
+    # Return the captured exception
     assert type(reraise.exception) is AssertionError
 
-    # This won't do anything, since an exception has already been captured:
+    # This won't do anything, since an exception has already been captured
     reraise.exception = Exception()
 
-    # Return the exception and set `reraise.exception` to None:
+    # Return the exception and set reraise.exception to None
     err = reraise.reset()
     assert isinstance(err, AssertionError)
     assert "Raised error here" in str(err)
 
-    # `Reraise` will not fail the test case because
+    # Reraise will not fail the test case
     assert reraise.exception is None

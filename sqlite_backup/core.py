@@ -36,7 +36,7 @@ def atomic_copy(src: str, dest: str) -> bool:
 
     This retries till the file doesn't change while we were copying it
 
-    If the file did change (before the final copy, which suceeded) while we were copying it, this returns False
+    If the file did change (before the final copy, which succeeded) while we were copying it, this returns False
     """
     failed = False
     while True:
@@ -77,7 +77,7 @@ def copy_all_files(
     atomic_copy's definition of failure
     """
     if not temporary_dest.is_dir():
-        raise ValueError(f"Expected a directory, recieved {temporary_dest}")
+        raise ValueError(f"Expected a directory, received {temporary_dest}")
     sources = [str(s) for s in source_files]
     destinations = [str(temporary_dest / s.name) for s in source_files]
     # (source, destination) for each file
@@ -103,8 +103,16 @@ def sqlite_backup(
     """
     'Snapshots' the source database and opens by making a deep copy of it, including journal/WAL files
 
-    If you don't supply a destination, this copies the database into memory and returns an active connection to that
-    If you want
+    If you don't specify a 'destination', this copies the database
+    into memory and returns an active connection to that. i.e.:,
+
+    source sqlite database file with possible extra -wal files
+        -> copy to temporary directory
+        -> sqlite3.connect(temporary directory/db) ->
+        -> temp_database_connection.backup(destination)
+
+    If you specify a 'destination', this copies the 'source' to the 'destination' file, instead of
+    into memory
 
     If 'copy_use_tempdir' is True, this copies the relevant database files to a temporary directory,
     and then copies it into destination using sqlite3.Connection.backup
@@ -113,9 +121,13 @@ def sqlite_backup(
     (if theres a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
     which is what we're trying to avoid in the first place
 
-    'copy_retry' specifies how many times we should attempt to copy the database files, if they
-    happen to change while we're doing so. 'copy_retry_strict' throws an error if it didn't happen
-    to copy in 'copy_retry' times
+    'copy_retry' (default 100) specifies how many times we should attempt to copy the database files, if they
+    happen to change while we're copying. If 'copy_retry_strict' is True, this throws an error if it failed
+    to safely copy the database files 'copy_retry' times
+
+    'sqlite_connect_kwargs' and 'sqlite_backup_kwargs' let you pass additional kwargs
+    to the connect (when copying from the source database) and the backup (when copying
+    from the source (or database in the tempdir) to the destination
     """
     source_path = Path(source)
     copy_from: Path
@@ -167,11 +179,15 @@ def sqlite_backup(
             conn.backup(target_connection, **sqlite_backup_kwargs)
 
         # if there was no target, then we copied into memory
-        # dont close so that the user has access to the memory
+        # don't close so that the user has access to the memory
         # otherwise, the data is just copied and lost
         if destination is None:
             return target_connection
         else:
             # destination was a file - close
             target_connection.close()
+            # TODO -- make sure that no -wal file exists here?
+            # probably want to close and reopen the connection, and
+            # set pragma/VACCUUM
+            # should probably be a flag
             return None
