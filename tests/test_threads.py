@@ -5,7 +5,7 @@ https://github.com/bjoluc/pytest-reraise
 
 
 import pytest
-from pytest_reraise import Reraise
+from pytest_reraise import Reraise  # type: ignore[import]
 
 from . import run_in_thread
 

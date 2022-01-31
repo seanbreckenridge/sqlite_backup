@@ -7,7 +7,7 @@ import pytest
 
 # make sure errors in threads get raised by pytest properly
 # https://github.com/bjoluc/pytest-reraise
-from pytest_reraise import Reraise
+from pytest_reraise import Reraise  # type: ignore[import]
 
 from sqlite_backup.core import (
     _sqlite_connect_immutable as sqlite_connect_immutable,
