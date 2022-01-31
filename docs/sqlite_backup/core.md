@@ -51,7 +51,7 @@ Classes
 -------
 
 `SqliteBackupError(*args, **kwargs)`
-:   Unspecified run-time error.
+:   Generic error for the sqlite_backup module
 
     ### Ancestors (in MRO)
 
