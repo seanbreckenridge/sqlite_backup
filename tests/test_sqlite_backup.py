@@ -1,6 +1,6 @@
-from pathlib import Path
 import shutil
 import sqlite3
+from pathlib import Path
 from typing import Generator
 
 import pytest
@@ -12,6 +12,8 @@ from pytest_reraise import Reraise  # type: ignore[import]
 from sqlite_backup.core import (
     _sqlite_connect_immutable as sqlite_connect_immutable,
     sqlite_backup,
+    atomic_copy,
+    SqliteBackupError,
 )
 
 from . import run_in_thread
@@ -173,9 +175,11 @@ def test_copy_to_another_file(
     @reraise.wrap
     def _run() -> None:
         destination_database = tmp_path / "db.sqlite"
-        conn = sqlite_backup(sqlite_with_wal, destination_database)
+        conn = sqlite_backup(
+            sqlite_with_wal, destination_database, wal_checkpoint=False
+        )
         assert conn is None  # the database connection is closed
-        # if we want to access it, just open it again
+
         with sqlite3.connect(destination_database) as dest_conn:
             assert len(list(dest_conn.execute("SELECT * FROM testtable"))) == 10
         dest_conn.close()
@@ -183,7 +187,63 @@ def test_copy_to_another_file(
     run_in_thread(_run)
 
 
+def test_backup_with_checkpoint(
+    sqlite_with_wal: Path, reraise: Reraise, tmp_path: Path
+) -> None:
+    """
+    Copy from the sqlite_with_wal to another database file, then
+    run a WAL checkpoint to absorb any temporary files
+
+    test this worked by opening it in immutable mode
+    """
+
+    @reraise.wrap
+    def _run() -> None:
+        destination_database = tmp_path / "db.sqlite"
+        # default kwargs; assumed wal_checkpoint=True for sqlite_backup
+        conn = sqlite_backup(sqlite_with_wal, destination_database)
+        assert conn is None  # the database connection is closed
+        # should be able to read all data in immutable mode
+        with sqlite_connect_immutable(destination_database) as dest_conn:
+            assert len(list(dest_conn.execute("SELECT * FROM testtable"))) == 10
+        dest_conn.close()
+
+    run_in_thread(_run)
+
+
+def test_backup_without_checkpoint(
+    sqlite_with_wal: Path, reraise: Reraise, tmp_path: Path
+) -> None:
+    """
+    similar to test_copy_vacuum, if backup is run without a wal_checkpoint,
+    then connecting to the database with immutable=1 doesn't pick up anything from the -wal
+    """
+
+    @reraise.wrap
+    def _run() -> None:
+        destination_database = tmp_path / "db.sqlite"
+        conn = sqlite_backup(
+            sqlite_with_wal, destination_database, wal_checkpoint=False
+        )
+        assert conn is None  # the database connection is closed
+        # this has 5 and not 10, since immutable reads nothing from the copied
+        # -wal file which was not added to the main database file
+        with sqlite_connect_immutable(destination_database) as imm:
+            assert len(list(imm.execute("SELECT * FROM testtable"))) == 5
+        imm.close()
+
+        # however, opening it without immutable should still pick up data in the WAL
+        with sqlite3.connect(destination_database) as reg_conn:
+            assert len(list(reg_conn.execute("SELECT * FROM testtable"))) == 10
+        reg_conn.close()
+
+    run_in_thread(_run)
+
+
 def test_database_doesnt_exist(tmp_path: Path, reraise: Reraise) -> None:
+    """
+    basic test to make sure sqlite_backup fails if db doesnt exist
+    """
 
     db = str(tmp_path / "db.sqlite")
 
@@ -197,3 +257,31 @@ def test_database_doesnt_exist(tmp_path: Path, reraise: Reraise) -> None:
     assert isinstance(err, FileNotFoundError)
     assert err.filename == db
     assert "No such file or directory" in err.strerror
+
+
+def test_copy_retry_strict(sqlite_with_wal: Path, reraise: Reraise) -> None:
+    """
+    Test copy_retry_strict, e.g., if the file is constantly being written to and
+    this fails to copy, this should raise an error
+    """
+
+    def _run() -> None:
+        def atomic_copy_failed(src: str, dest: str) -> bool:
+            atomic_copy(src, dest)
+            return False
+
+        with reraise:
+            sqlite_backup(
+                sqlite_with_wal,
+                copy_retry_strict=True,
+                copy_function=atomic_copy_failed,
+            )
+
+    run_in_thread(_run, allow_unwrapped=True)
+
+    err = reraise.reset()
+    assert isinstance(err, SqliteBackupError)
+    assert (
+        "this failed to copy all files without any of them changing 100 times"
+        in str(err)
+    )

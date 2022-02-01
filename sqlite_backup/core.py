@@ -5,13 +5,24 @@ import filecmp
 import shutil
 import warnings
 
-from typing import Union, Optional, List, Iterable, Tuple, Dict, Any, Generator
+from typing import (
+    Union,
+    Optional,
+    List,
+    Tuple,
+    Dict,
+    Any,
+    Generator,
+    Callable,
+)
 from pathlib import Path
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
 
 PathIsh = Union[str, Path]
+
+CopyFunction = Callable[[str, str], bool]
 
 
 class SqliteBackupError(RuntimeError):
@@ -40,8 +51,8 @@ def atomic_copy(src: str, dest: str) -> bool:
     """
     failed = False
     while True:
-        res = shutil.copy(src, dest)
-        if filecmp.cmp(src, res):
+        shutil.copy(src, dest)
+        if filecmp.cmp(src, dest, shallow=True) is True:
             # failed, return whether or not this failed on any loop iteration
             return failed
         else:
@@ -63,7 +74,10 @@ def glob_database_files(source_database: Path) -> List[Path]:
 
 
 def copy_all_files(
-    source_files: List[Path], temporary_dest: Path, retry: int = 100
+    source_files: List[Path],
+    temporary_dest: Path,
+    copy_function: CopyFunction,
+    retry: int = 100,
 ) -> bool:
     """
     Copy all files from source to directory
@@ -81,10 +95,10 @@ def copy_all_files(
     sources = [str(s) for s in source_files]
     destinations = [str(temporary_dest / s.name) for s in source_files]
     # (source, destination) for each file
-    copies: Iterable[Tuple[str, str]] = zip(sources, destinations)
+    copies: List[Tuple[str, str]] = list(zip(sources, destinations))
     while retry >= 0:
         # if all files successfully copied according to atomic_copy's definition
-        if all(atomic_copy(s, d) for s, d in copies):
+        if all([copy_function(s, d) for s, d in copies]):
             return True
         retry -= 1
     return False
@@ -94,11 +108,13 @@ def sqlite_backup(
     source: PathIsh,
     destination: Optional[PathIsh] = None,
     *,
+    wal_checkpoint: bool = True,
     copy_use_tempdir: bool = True,
     copy_retry: int = 100,
     copy_retry_strict: bool = False,
     sqlite_connect_kwargs: Optional[Dict[str, Any]] = None,
     sqlite_backup_kwargs: Optional[Dict[str, Any]] = None,
+    copy_function: Optional[CopyFunction] = None,
 ) -> Optional[sqlite3.Connection]:
     """
     'Snapshots' the source database and opens by making a deep copy of it, including journal/WAL files
@@ -122,6 +138,12 @@ def sqlite_backup(
     If you instead specify a path as the 'destination', this creates the
     database file there, and returns nothing (If you want access to the
     destination database, open a connection afterwards with sqlite3.connect)
+
+    'wal_checkpoint' runs a 'PRAGMA wal_checkpoint(TRUNCATE)' after it writes to
+    the destination database, which truncates the write ahead log to 0 bytes.
+    This is to ensure that all data is contained in the single database file -
+    so all data is accessible even if this is opened in immutable mode in the future
+    https://www.sqlite.org/pragma.html#pragma_wal_checkpoint
 
     if 'copy_use_tempdir' is False, that skips the copy, which increases the chance that this fails
     (if theres a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
@@ -149,13 +171,19 @@ def sqlite_backup(
     if sqlite_backup_kwargs is None:
         sqlite_backup_kwargs = {}
 
+    if copy_function is None:
+        copy_function = atomic_copy
+
     with TemporaryDirectory() as td:
         # if we should copy files to the temporary dir
         # could use a nullcontext but is harder to read
         if copy_use_tempdir:
             tdir = Path(td)
             succeeded = copy_all_files(
-                glob_database_files(source_path), temporary_dest=tdir, retry=copy_retry
+                glob_database_files(source_path),
+                temporary_dest=tdir,
+                copy_function=copy_function,
+                retry=copy_retry,
             )
             if not succeeded and copy_retry_strict:
                 raise SqliteBackupError(
@@ -183,6 +211,7 @@ def sqlite_backup(
 
         with sqlite3.connect(copy_from, **sqlite_connect_kwargs) as conn:
             conn.backup(target_connection, **sqlite_backup_kwargs)
+        conn.close()
 
     # if there was no target, then we copied into memory
     # don't close so that the user has access to the memory
@@ -192,6 +221,11 @@ def sqlite_backup(
     else:
         # destination was a file - close
         target_connection.close()
+        if wal_checkpoint:
+            conn = sqlite3.connect(destination)
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+            conn.commit()
+            conn.close()
         # TODO -- make sure that no -wal file exists here?
         # probably want to close and reopen the connection, and
         # set pragma/VACCUUM
