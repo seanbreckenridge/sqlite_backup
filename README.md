@@ -54,7 +54,7 @@ Options:
   --help                          Show this message and exit.
 ```
 
-For usage in python, use the `sqlite_backup`, see the [docs](./docs/sqlite_backup/core.md)
+For usage in python, use the `sqlite_backup` function, see the [docs](./docs/sqlite_backup/core.md)
 
 ### Tests
 
