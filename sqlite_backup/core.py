@@ -104,18 +104,24 @@ def sqlite_backup(
     'Snapshots' the source database and opens by making a deep copy of it, including journal/WAL files
 
     If you don't specify a 'destination', this copies the database
-    into memory and returns an active connection to that. i.e.:,
+    into memory and returns an active connection to that.
 
-    source sqlite database file with possible extra -wal files
-        -> copy to temporary directory
-        -> sqlite3.connect(temporary directory/db) ->
-        -> temp_database_connection.backup(destination)
-
-    If you specify a 'destination', this copies the 'source' to the 'destination' file, instead of
-    into memory
+    If you specify a 'destination', this copies the 'source' to the 'destination' file,
+    instead of into memory
 
     If 'copy_use_tempdir' is True, this copies the relevant database files to a temporary directory,
-    and then copies it into destination using sqlite3.Connection.backup
+    and then copies it into destination using sqlite3.Connection.backup. So, by default, the steps are:
+
+    - Copy the source database files to a temporary directory
+    - create a connection to the temporary database files
+    - create a temporary 'destination' connection in memory
+    - backup from the temporary directory database connection to the destination
+    - cleanup; close temporary connection and remove temporary files
+    - returns the 'destination' connection, which has the data stored in memory
+
+    If you instead specify a path as the 'destination', this creates the
+    database file there, and returns nothing (If you want access to the
+    destination database, open a connection afterwards with sqlite3.connect)
 
     if 'copy_use_tempdir' is False, that skips the copy, which increases the chance that this fails
     (if theres a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
@@ -178,16 +184,16 @@ def sqlite_backup(
         with sqlite3.connect(copy_from, **sqlite_connect_kwargs) as conn:
             conn.backup(target_connection, **sqlite_backup_kwargs)
 
-        # if there was no target, then we copied into memory
-        # don't close so that the user has access to the memory
-        # otherwise, the data is just copied and lost
-        if destination is None:
-            return target_connection
-        else:
-            # destination was a file - close
-            target_connection.close()
-            # TODO -- make sure that no -wal file exists here?
-            # probably want to close and reopen the connection, and
-            # set pragma/VACCUUM
-            # should probably be a flag
-            return None
+    # if there was no target, then we copied into memory
+    # don't close so that the user has access to the memory
+    # otherwise, the data is just copied and lost
+    if destination is None:
+        return target_connection
+    else:
+        # destination was a file - close
+        target_connection.close()
+        # TODO -- make sure that no -wal file exists here?
+        # probably want to close and reopen the connection, and
+        # set pragma/VACCUUM
+        # should probably be a flag
+        return None
