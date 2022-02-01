@@ -52,7 +52,7 @@ def atomic_copy(src: str, dest: str) -> bool:
     failed = False
     while True:
         shutil.copy(src, dest)
-        if filecmp.cmp(src, dest, shallow=True) is True:
+        if filecmp.cmp(src, dest, shallow=True):
             # failed, return whether or not this failed on any loop iteration
             return failed
         else:
