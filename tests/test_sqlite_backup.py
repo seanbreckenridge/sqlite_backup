@@ -5,6 +5,7 @@ from typing import Generator
 
 import pytest
 
+# nice, didn't know of reraise!
 # make sure errors in threads get raised by pytest properly
 # https://github.com/bjoluc/pytest-reraise
 from pytest_reraise import Reraise  # type: ignore[import]
@@ -183,6 +184,9 @@ def test_copy_to_another_file(
         with sqlite3.connect(destination_database) as dest_conn:
             assert len(list(dest_conn.execute("SELECT * FROM testtable"))) == 10
         dest_conn.close()
+
+        # maybe add an assert that target backup dir doesn't contain any files except the database?
+        # just in case and perhaps for documentation purposes
 
     run_in_thread(_run)
 

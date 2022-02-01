@@ -6,8 +6,11 @@ import click
 from .core import sqlite_backup
 
 
+# - would be nice to add defaults to the `--help`, especially considering that some flags are true by default and some are false. 
+# I figured out how to do this in click for all parameters recently: https://github.com/karlicoss/bleanser/blob/7497b98a3187f7fa75ce88002d858ff8699ac789/src/bleanser/core/main.py#L15-L24
 @click.command()
 @click.option(
+    # Not sure if even worth exposing in cli? Although pehaps useful for truly paranoid people :)
     "--wal-checkpoint/--no-wal-checkpoint",
     default=True,
     is_flag=True,
@@ -26,6 +29,8 @@ from .core import sqlite_backup
     help="If the files change while copying to the temporary directory, retry <n> times",
 )
 @click.option(
+    # hmm imo isn't clear from the help message what happens if it fails to copy after --copy-retry times 
+    # seems it just continues? I guess that's sensible in some cases, but IMO the default=False feels somewhat unexpected?
     "--copy-retry-strict/--no-copy-retry-strict",
     default=False,
     is_flag=True,

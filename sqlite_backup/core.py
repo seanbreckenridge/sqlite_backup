@@ -30,6 +30,7 @@ class SqliteBackupError(RuntimeError):
 
 
 @contextmanager
+# can just use Iterator for contextmanagers? 
 def _sqlite_connect_immutable(db: PathIsh) -> Generator[sqlite3.Connection, None, None]:
     # https://www.sqlite.org/draft/uri.html#uriimmutable
     try:
@@ -111,7 +112,7 @@ def sqlite_backup(
     wal_checkpoint: bool = True,
     copy_use_tempdir: bool = True,
     copy_retry: int = 100,
-    copy_retry_strict: bool = False,
+    copy_retry_strict: bool = False, # imo, True for default would be safer? 
     sqlite_connect_kwargs: Optional[Dict[str, Any]] = None,
     sqlite_backup_kwargs: Optional[Dict[str, Any]] = None,
     copy_function: Optional[CopyFunction] = None,
