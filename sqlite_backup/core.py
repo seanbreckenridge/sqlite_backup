@@ -226,8 +226,4 @@ def sqlite_backup(
             conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
             conn.commit()
             conn.close()
-        # TODO -- make sure that no -wal file exists here?
-        # probably want to close and reopen the connection, and
-        # set pragma/VACCUUM
-        # should probably be a flag
         return None
