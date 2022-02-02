@@ -54,6 +54,9 @@ def sqlite_with_wal(
         wals = list(db.parent.glob("*-wal"))
         assert len(wals) == 1
 
+        # make sure -wal file is not empty
+        assert wals[0].stat().st_size > 0
+
         yield db
 
     conn.close()
@@ -273,6 +276,10 @@ def test_backup_with_checkpoint(
             Path(str(destination_database) + "-wal"),
         }
         assert set(destination_database.parent.iterdir()) == expected
+
+        # however, at least we can confirm the write ahead log is empty after a wal checkpoint
+        log_file = Path(str(destination_database) + "-wal")
+        assert log_file.stat().st_size == 0
 
     run_in_thread(_run)
 
