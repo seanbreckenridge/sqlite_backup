@@ -107,7 +107,7 @@ def copy_all_files(
     sources = [str(s) for s in source_files]
     destinations = [str(temporary_dest / s.name) for s in source_files]
     # (source, destination) for each file
-    logger.debug(f"Source database files: '{destinations}'")
+    logger.debug(f"Source database files: '{sources}'")
     logger.debug(f"Temporary Destination database files: '{destinations}'")
     copies: List[Tuple[str, str]] = list(zip(sources, destinations))
     while retry >= 0:
@@ -158,9 +158,13 @@ def sqlite_backup(
 
     'wal_checkpoint' runs a 'PRAGMA wal_checkpoint(TRUNCATE)' after it writes to
     the destination database, which truncates the write ahead log to 0 bytes.
-    This is to ensure that all data is contained in the single database file -
-    so all data is accessible even if this is opened in immutable mode in the future
-    https://www.sqlite.org/pragma.html#pragma_wal_checkpoint
+    Typically the WAL is removed when the database is closed, but particular builds of sqlite
+    or sqlite compiled with SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE may prevent that --
+    so the checkpoint exists to ensure there are no temporary files leftover
+
+    See:
+    https://sqlite.org/forum/forumpost/1fdfc1a0e7
+    https://www.sqlite.org/c3ref/c_dbconfig_enable_fkey.html
 
     if 'copy_use_tempdir' is False, that skips the copy, which increases the chance that this fails
     (if theres a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
@@ -181,6 +185,12 @@ def sqlite_backup(
         raise FileNotFoundError(
             errno.ENOENT, os.strerror(errno.ENOENT), str(source_path)
         )
+
+    if destination is not None:
+        if source_path == Path(destination):
+            raise ValueError(
+                f"'source' and 'destination' '{source_path}' can't be the same"
+            )
 
     if sqlite_connect_kwargs is None:
         sqlite_connect_kwargs = {}
@@ -222,7 +232,7 @@ def sqlite_backup(
             target_connection = sqlite3.connect(":memory:")
         else:
             if not isinstance(destination, (str, Path)):
-                raise ValueError(
+                raise TypeError(
                     f"Unexpected 'destination' type, expected path like object, got {type(destination)}"
                 )
             target_connection = sqlite3.connect(destination)
@@ -232,6 +242,11 @@ def sqlite_backup(
         )
         with sqlite3.connect(copy_from, **sqlite_connect_kwargs) as conn:
             conn.backup(target_connection, **sqlite_backup_kwargs)
+
+        if destination is not None and wal_checkpoint:
+            with conn:
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+
         conn.close()
 
     # if there was no target, then we copied into memory
@@ -240,14 +255,4 @@ def sqlite_backup(
     if destination is None:
         return target_connection
     else:
-        # destination was a file - close
-        target_connection.close()
-        if wal_checkpoint:
-            logger.debug(
-                f"Executing 'wal_checkpoint(TRUNCATE)' on destination '{destination}'"
-            )
-            conn = sqlite3.connect(destination)
-            conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
-            conn.commit()
-            conn.close()
         return None

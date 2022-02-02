@@ -55,9 +55,13 @@ Functions
     
     'wal_checkpoint' runs a 'PRAGMA wal_checkpoint(TRUNCATE)' after it writes to
     the destination database, which truncates the write ahead log to 0 bytes.
-    This is to ensure that all data is contained in the single database file -
-    so all data is accessible even if this is opened in immutable mode in the future
-    https://www.sqlite.org/pragma.html#pragma_wal_checkpoint
+    Typically the WAL is removed when the database is closed, but particular builds of sqlite
+    or sqlite compiled with SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE may prevent that --
+    so the checkpoint exists to ensure there are no temporary files leftover
+    
+    See:
+    https://sqlite.org/forum/forumpost/1fdfc1a0e7
+    https://www.sqlite.org/c3ref/c_dbconfig_enable_fkey.html
     
     if 'copy_use_tempdir' is False, that skips the copy, which increases the chance that this fails
     (if theres a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
