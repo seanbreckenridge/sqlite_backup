@@ -202,7 +202,6 @@ def test_copy_to_another_file(
         # an attempt is made to acquire SQLITE_LOCK_EXCLUSIVE
         #
         # Its not able to acquire a SQLITE_LOCK_EXCLUSIVE, so it doesn't truncate the WAL file?
-        # However, below in test_backup_with_checkpoint wal_checkpoint(TRUNCATE) should **block** till that happens
         #
         # which reading some of the comments here, confirms the (incorrectly descrbied?) behaviour I see
         # https://github.com/groue/GRDB.swift/issues/418
@@ -267,12 +266,15 @@ def test_backup_with_checkpoint(
         #
         # the theories I have are therefore:
         # 1) either connection.backup is copying the -shm/-wal files (which is understandable)
-        #    and even running the wal_checkpoint(TRUNCATE) doesnt remove the files till after the process
-        #    ends (why??)
+        #    and even running the wal_checkpoint(TRUNCATE) doesn't remove the files till after the process
+        #    ends, even though we've already closed the connection. However, running the wal_checkpoint
+        #    does appear to successfully truncate the WAL to 0 bytes, the file just
+        #    isn't deleted when the connection is closed, irrespective of whether or
+        #    not we ran a checkpoint
         # 2) immutable is creating files, which shoud never be happening according to the docs:
         #    https://www.sqlite.org/uri.html#uriimmutable
         #
-        # however, disregarding all the confusion above, I don't think this interferes with how a user
+        # Disregarding all the confusion above, I don't think this interferes with how a user
         # would use this. Even while opening in immutable (which should not pick up stuff from the -wal,
         # as tested by test_do_immutable above), this still returns all 10 rows, not just 5
 
