@@ -224,6 +224,12 @@ def test_copy_to_another_file(
         # track of which databases have been connected to, and atexit they
         # respect this behaviour? But I can't reproduce it here
 
+        # since we didn't run a wal checkpoint, the WAL at the destination still has data here --
+        # would suggest connection.backup corectly copies data from the source WAL to the target destination
+        wal = Path(str(destination_database) + "-wal")
+        assert wal.exists()
+        assert wal.stat().st_size > 0
+
         # with all that in mind, lets just test against the current behaviour
         # so if it changes we know it has
 
