@@ -12,17 +12,21 @@ from typing import (
     Tuple,
     Dict,
     Any,
-    Generator,
+    Iterator,
     Callable,
 )
 from pathlib import Path
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
+from .log import logger
+
 
 PathIsh = Union[str, Path]
 
 CopyFunction = Callable[[str, str], bool]
+
+COPY_RETRY_DEFAULT: int = 100
 
 
 class SqliteBackupError(RuntimeError):
@@ -30,7 +34,7 @@ class SqliteBackupError(RuntimeError):
 
 
 @contextmanager
-def _sqlite_connect_immutable(db: PathIsh) -> Generator[sqlite3.Connection, None, None]:
+def _sqlite_connect_immutable(db: PathIsh) -> Iterator[sqlite3.Connection]:
     # https://www.sqlite.org/draft/uri.html#uriimmutable
     try:
         with sqlite3.connect(f"file:{db}?immutable=1", uri=True) as conn:
@@ -49,14 +53,22 @@ def atomic_copy(src: str, dest: str) -> bool:
 
     If the file did change (before the final copy, which succeeded) while we were copying it, this returns False
     """
-    failed = False
+    # function-level succeeded value -- i.e., if while trying to copy
+    # this this failed, it marks this as False. It still retries, but
+    # this is to signify to copy_all_files that something changed while
+    # we were copying, so we likely want to retry
+    succeeded = True
     while True:
         shutil.copy(src, dest)
         if filecmp.cmp(src, dest, shallow=True):
-            # failed, return whether or not this failed on any loop iteration
-            return failed
+            logger.debug(
+                f"Copied from '{src}' to '{dest}' successfully; copied without file changing: {succeeded}"
+            )
+            # succeeded, return whether or not this failed on any loop iteration
+            return succeeded
         else:
-            failed = True
+            logger.debug(f"Failed to copy from '{src}' to '{dest}', retrying...")
+            succeeded = False
 
 
 def glob_database_files(source_database: Path) -> List[Path]:
@@ -77,7 +89,7 @@ def copy_all_files(
     source_files: List[Path],
     temporary_dest: Path,
     copy_function: CopyFunction,
-    retry: int = 100,
+    retry: int,
 ) -> bool:
     """
     Copy all files from source to directory
@@ -95,12 +107,17 @@ def copy_all_files(
     sources = [str(s) for s in source_files]
     destinations = [str(temporary_dest / s.name) for s in source_files]
     # (source, destination) for each file
+    logger.debug(f"Source database files: '{destinations}'")
+    logger.debug(f"Temporary Destination database files: '{destinations}'")
     copies: List[Tuple[str, str]] = list(zip(sources, destinations))
     while retry >= 0:
         # if all files successfully copied according to atomic_copy's definition
         if all([copy_function(s, d) for s, d in copies]):
             return True
         retry -= 1
+        logger.debug(
+            f"Failed to copy all files without at least one changing, retrying ({retry} left)"
+        )
     return False
 
 
@@ -110,8 +127,8 @@ def sqlite_backup(
     *,
     wal_checkpoint: bool = True,
     copy_use_tempdir: bool = True,
-    copy_retry: int = 100,
-    copy_retry_strict: bool = False,
+    copy_retry: int = COPY_RETRY_DEFAULT,
+    copy_retry_strict: bool = True,
     sqlite_connect_kwargs: Optional[Dict[str, Any]] = None,
     sqlite_backup_kwargs: Optional[Dict[str, Any]] = None,
     copy_function: Optional[CopyFunction] = None,
@@ -201,6 +218,7 @@ def sqlite_backup(
 
         target_connection: sqlite3.Connection
         if destination is None:
+            logger.debug("No destination provided, copying data to ':memory:'")
             target_connection = sqlite3.connect(":memory:")
         else:
             if not isinstance(destination, (str, Path)):
@@ -209,6 +227,9 @@ def sqlite_backup(
                 )
             target_connection = sqlite3.connect(destination)
 
+        logger.debug(
+            f"Running backup, from '{copy_from}' to '{destination or 'memory'}'"
+        )
         with sqlite3.connect(copy_from, **sqlite_connect_kwargs) as conn:
             conn.backup(target_connection, **sqlite_backup_kwargs)
         conn.close()
@@ -222,6 +243,9 @@ def sqlite_backup(
         # destination was a file - close
         target_connection.close()
         if wal_checkpoint:
+            logger.debug(
+                f"Executing 'wal_checkpoint(TRUNCATE)' on destination '{destination}'"
+            )
             conn = sqlite3.connect(destination)
             conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
             conn.commit()

@@ -39,22 +39,44 @@ Usage: sqlite_backup [OPTIONS] SOURCE_DATABASE DESTINATION
   possibly overwriting old data)
 
 Options:
+  --debug                         Increase log verbosity  [default: False]
   --wal-checkpoint / --no-wal-checkpoint
                                   After writing to the destination, run a
                                   checkpoint to truncate the WAL to zero bytes
-  --copy-use-tempdir / --copy-no-tempdir
+                                  [default: wal-checkpoint]
+  --copy-use-tempdir / --no-copy-use-tempdir
                                   Copy the source database files to a
                                   temporary directory, then connect to the
-                                  copied files
+                                  copied files  [default: copy-use-tempdir]
   --copy-retry INTEGER            If the files change while copying to the
-                                  temporary directory, retry <n> many times
+                                  temporary directory, retry <n> times
+                                  [default: 100]
   --copy-retry-strict / --no-copy-retry-strict
                                   Throws an error if this fails to safely copy
                                   the database files --copy-retry times
-  --help                          Show this message and exit.
+                                  [default: copy-retry-strict]
+  --help                          Show this message and exit.  [default:
+                                  False]
 ```
 
 For usage in python, use the `sqlite_backup` function, see the [docs](./docs/sqlite_backup/core.md)
+
+If you plan on reading from these backed up databases (and you're not planning on modifying these at all), I would recommend using the [`immutable` flag](https://www.sqlite.org/uri.html#uriimmutable) when connecting to the database. In python, like:
+
+```python
+import sqlite3
+from typing import Iterator
+
+def sqlite_connect_immutable(database: str) -> Iterator[sqlite3.Connection]:
+    try:
+        with sqlite3.connect(f"file:{database}?immutable=1", uri=True) as conn:
+            yield conn
+    finally:
+        conn.close()
+
+with sqlite_connect_immutable("/path/to/database") as conn:
+    conn.execute("...")
+```
 
 ### Tests
 

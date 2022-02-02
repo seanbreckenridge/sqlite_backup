@@ -1,12 +1,20 @@
 import sys
+import logging
 from pathlib import Path
 
 import click
 
-from .core import sqlite_backup
+from .core import sqlite_backup, COPY_RETRY_DEFAULT
+from .log import setup
+
+CONTEXT_SETTINGS = {
+    "max_content_width": 120,
+    "show_default": True,
+}
 
 
-@click.command()
+@click.command(context_settings=CONTEXT_SETTINGS)
+@click.option("--debug", is_flag=True, default=False, help="Increase log verbosity")
 @click.option(
     "--wal-checkpoint/--no-wal-checkpoint",
     default=True,
@@ -14,20 +22,21 @@ from .core import sqlite_backup
     help="After writing to the destination, run a checkpoint to truncate the WAL to zero bytes",
 )
 @click.option(
-    "--copy-use-tempdir/--copy-no-tempdir",
+    "--copy-use-tempdir/--no-copy-use-tempdir",
     default=True,
     is_flag=True,
     help="Copy the source database files to a temporary directory, then connect to the copied files",
 )
 @click.option(
     "--copy-retry",
-    default=100,
+    default=COPY_RETRY_DEFAULT,
     type=int,
+    show_default=False,
     help="If the files change while copying to the temporary directory, retry <n> times",
 )
 @click.option(
     "--copy-retry-strict/--no-copy-retry-strict",
-    default=False,
+    default=True,
     is_flag=True,
     help="Throws an error if this fails to safely copy the database files --copy-retry times",
 )
@@ -38,6 +47,7 @@ from .core import sqlite_backup
 )
 @click.argument("DESTINATION", required=True, type=click.Path(path_type=Path))
 def main(
+    debug: bool,
     wal_checkpoint: bool,
     copy_use_tempdir: bool,
     copy_retry: int,
@@ -54,6 +64,9 @@ def main(
     and the destination file must not already exist (to prevent
     possibly overwriting old data)
     """
+    if debug:
+        setup(logging.DEBUG)
+
     source_database = source_database.absolute()
     dest: Path
     if destination.exists():
@@ -69,7 +82,10 @@ def main(
             click.echo(f"Target DESTINATION already exists: '{destination}'", err=True)
             sys.exit(1)
         else:
-            click.echo(f"Target DESTINATION is not a directory or a file", err=True)
+            click.echo(
+                f"Target DESTINATION '{destination}' is not a directory or a file",
+                err=True,
+            )
             sys.exit(1)
     else:
         # doesnt exist, check if parent dir exists

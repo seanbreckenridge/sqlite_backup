@@ -101,7 +101,7 @@ def test_do_immutable(sqlite_with_wal: Path, reraise: Reraise) -> None:
     a copy of the database in immutable mode
 
     *IF* the application changed this query was executing, this has the oppurtunity
-    to corrupt or fetch incorrect results -- this only works becuase
+    to corrupt or fetch incorrect results -- this only works because
     we control sqlite_with_wal and know its not going to change
 
     this also doesn't read anything from the WAL -- only the database
@@ -184,6 +184,45 @@ def test_copy_to_another_file(
             assert len(list(dest_conn.execute("SELECT * FROM testtable"))) == 10
         dest_conn.close()
 
+        # according to the docs, https://www.sqlite.org/walformat.html#file_lifecycles:
+        #
+        # If the last client using the database shuts down cleanly by calling
+        # sqlite3_close(), then a checkpoint is run automatically in order to transfer
+        # all information from the wal file over into the main database, and both the shm
+        # file and the wal file are unlinked
+        #
+        # It does indeed seem to call 'sqlite3_close_v2'
+        # https://github.com/python/cpython/blob/8fb36494501aad5b0c1d34311c9743c60bb9926c/Modules/_sqlite/connection.c#L340
+        # which reading some of the comments here, confirms the (incorrectly descrbied?) behaviour I see
+        # https://github.com/groue/GRDB.swift/issues/418
+        # https://github.com/groue/GRDB.swift/issues/739
+        #
+        # Also here, it seems that this issue was seemingly resolved by upgrading
+        # versions, but no particular commit/bugfix pointed to
+        # https://sqlite.org/forum/forumpost/1fdfc1a0e7
+        #
+        # It may depend on a compilation flag, https://www.sqlite.org/c3ref/c_dbconfig_enable_fkey.html
+        # SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE (though that is disabled on my system)
+        # so its not a good idea to depend on the
+        # the fact that the -shm and -wal files "*wont*" be here:
+        # https://github.com/groue/GRDB.swift/issues/771#issuecomment-624479526
+        #
+        # from a user perspective (me manually testing this on databases), running the
+        # while wal_checkpoint=True, I've never seen the -wal/-shm files after
+        # the python process ends, so perhaps sqlite or python C code is keeping
+        # track of which databases have been connected to, and atexit they
+        # respect this behaviour? But I can't reproduce it here
+
+        # with all that in mind, lets just test against the current behaviour
+        # so if it changes we know it has
+
+        expected = {
+            destination_database,
+            Path(str(destination_database) + "-shm"),
+            Path(str(destination_database) + "-wal"),
+        }
+        assert set(destination_database.parent.iterdir()) == expected
+
     run_in_thread(_run)
 
 
@@ -200,13 +239,32 @@ def test_backup_with_checkpoint(
     @reraise.wrap
     def _run() -> None:
         destination_database = tmp_path / "db.sqlite"
-        # default kwargs; assumed wal_checkpoint=True for sqlite_backup
-        conn = sqlite_backup(sqlite_with_wal, destination_database)
+        conn = sqlite_backup(sqlite_with_wal, destination_database, wal_checkpoint=True)
         assert conn is None  # the database connection is closed
         # should be able to read all data in immutable mode
         with sqlite_connect_immutable(destination_database) as dest_conn:
             assert len(list(dest_conn.execute("SELECT * FROM testtable"))) == 10
         dest_conn.close()
+
+        # just like above, even if reading in immutable we still have -shm/-wal files here
+        #
+        # the theories I have are therefore:
+        # 1) either connection.backup is copying the -shm/-wal files (which is understandable)
+        #    and even running the wal_checkpoint(TRUNCATE) doesnt remove the files till after the process
+        #    ends (why??)
+        # 2) immutable is creating files, which shoud never be happening according to the docs:
+        #    https://www.sqlite.org/uri.html#uriimmutable
+        #
+        # however, disregarding all the confusion above, I don't think this interferes with how a user
+        # would use this. Even while opening in immutable (which should not pick up stuff from the -wal,
+        # as tested by test_do_immutable above), this still returns all 10 rows, not just 5
+
+        expected = {
+            destination_database,
+            Path(str(destination_database) + "-shm"),
+            Path(str(destination_database) + "-wal"),
+        }
+        assert set(destination_database.parent.iterdir()) == expected
 
     run_in_thread(_run)
 
