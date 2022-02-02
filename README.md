@@ -12,7 +12,7 @@ The main purpose for writing this is to copy sqlite databases that you may not o
 - Uses [`Cpython`s Connection.backup](https://github.com/python/cpython/blob/8fb36494501aad5b0c1d34311c9743c60bb9926c/Modules/_sqlite/connection.c#L1716), which directly uses the [underlying Sqlite C code](https://www.sqlite.org/c3ref/backup_finish.html)
 - Performs a [`wal_checkpoint`](https://www.sqlite.org/pragma.html#pragma_wal_checkpoint) after copying to the destination, to remove the WAL (write-ahead log; temporary database file) -- this ensures that [immutable](https://www.sqlite.org/c3ref/open.html) connections in the future have access to all of the data
 
-In short, this **prioritizes safety of the data** over performance, temporarily copied data files to `/tmp` or memory usage - because we often don't know what the application may be doing while we're copying underlying sqlite databases
+In short, this **prioritizes safety of the data** over performance (temporarily copying data files to `/tmp`) - because we often don't know what the application may be doing while we're copying underlying sqlite databases
 
 The initial backup function and some tests were extracted out of the [`karlicoss/HPI` `core/sqlite`](https://github.com/karlicoss/HPI/blob/a1f03f9c028df9d1898de2cc14f1df4fa6d8c471/my/core/sqlite.py#L33-L51) module
 
