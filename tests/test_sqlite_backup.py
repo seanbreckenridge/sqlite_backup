@@ -193,6 +193,14 @@ def test_copy_to_another_file(
         #
         # It does indeed seem to call 'sqlite3_close_v2'
         # https://github.com/python/cpython/blob/8fb36494501aad5b0c1d34311c9743c60bb9926c/Modules/_sqlite/connection.c#L340
+        #
+        # Perhaps; see https://www.sqlite.org/walformat.html
+        # When a database connection closes (via sqlite3_close() or sqlite3_close_v2()),
+        # an attempt is made to acquire SQLITE_LOCK_EXCLUSIVE
+        #
+        # Its not able to acquire a SQLITE_LOCK_EXCLUSIVE, so it doesn't truncate the WAL file?
+        # However, below in test_backup_with_checkpoint wal_checkpoint(TRUNCATE) should **block** till that happens
+        #
         # which reading some of the comments here, confirms the (incorrectly descrbied?) behaviour I see
         # https://github.com/groue/GRDB.swift/issues/418
         # https://github.com/groue/GRDB.swift/issues/739
