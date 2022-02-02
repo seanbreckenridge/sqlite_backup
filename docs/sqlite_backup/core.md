@@ -14,7 +14,7 @@ Functions
     If the file did change (before the final copy, which succeeded) while we were copying it, this returns False
 
     
-`copy_all_files(source_files: List[pathlib.Path], temporary_dest: pathlib.Path, copy_function: Callable[[str, str], bool], retry: int = 100) ‑> bool`
+`copy_all_files(source_files: List[pathlib.Path], temporary_dest: pathlib.Path, copy_function: Callable[[str, str], bool], retry: int) ‑> bool`
 :   Copy all files from source to directory
     This retries (up to 'retry' count) if any of the files change while any of the copies were copying
     
@@ -30,7 +30,7 @@ Functions
 :   List any of the temporary database files (and the database itself)
 
     
-`sqlite_backup(source: Union[str, pathlib.Path], destination: Union[str, pathlib.Path, ForwardRef(None)] = None, *, wal_checkpoint: bool = True, copy_use_tempdir: bool = True, copy_retry: int = 100, copy_retry_strict: bool = False, sqlite_connect_kwargs: Optional[Dict[str, Any]] = None, sqlite_backup_kwargs: Optional[Dict[str, Any]] = None, copy_function: Optional[Callable[[str, str], bool]] = None) ‑> Optional[sqlite3.Connection]`
+`sqlite_backup(source: Union[str, pathlib.Path], destination: Union[str, pathlib.Path, ForwardRef(None)] = None, *, wal_checkpoint: bool = True, copy_use_tempdir: bool = True, copy_retry: int = 100, copy_retry_strict: bool = True, sqlite_connect_kwargs: Optional[Dict[str, Any]] = None, sqlite_backup_kwargs: Optional[Dict[str, Any]] = None, copy_function: Optional[Callable[[str, str], bool]] = None) ‑> Optional[sqlite3.Connection]`
 :   'Snapshots' the source database and opens by making a deep copy of it, including journal/WAL files
     
     If you don't specify a 'destination', this copies the database
