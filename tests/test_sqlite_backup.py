@@ -278,8 +278,9 @@ def test_backup_with_checkpoint(
         assert set(destination_database.parent.iterdir()) == expected
 
         # however, at least we can confirm the write ahead log is empty after a wal checkpoint
-        log_file = Path(str(destination_database) + "-wal")
-        assert log_file.stat().st_size == 0
+        wal = Path(str(destination_database) + "-wal")
+        assert wal.exists()
+        assert wal.stat().st_size == 0
 
     run_in_thread(_run)
 
