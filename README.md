@@ -61,20 +61,21 @@ Options:
 
 For usage in python, use the `sqlite_backup` function, see the [docs](./docs/sqlite_backup/core.md)
 
-If you plan on reading from these backed up databases (and you're not planning on modifying these at all), I would recommend using the [`immutable` flag](https://www.sqlite.org/uri.html#uriimmutable) when connecting to the database. In python, like:
+If you plan on reading from these backed up databases (and you're not planning on modifying these at all), I would recommend using the [`mode=ro`](https://www.sqlite.org/uri.html#urimode) (readonly) or [`immutable` flag](https://www.sqlite.org/uri.html#uriimmutable) flags when connecting to the database. In python, like:
 
 ```python
 import sqlite3
 from typing import Iterator
 
-def sqlite_connect_immutable(database: str) -> Iterator[sqlite3.Connection]:
+def sqlite_connect(database: str) -> Iterator[sqlite3.Connection]:
     try:
-        with sqlite3.connect(f"file:{database}?immutable=1", uri=True) as conn:
+        # or for immutable, f"file:{database}?immutable=1"
+        with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as conn:
             yield conn
     finally:
         conn.close()
 
-with sqlite_connect_immutable("/path/to/database") as conn:
+with sqlite_connect("/path/to/database") as conn:
     conn.execute("...")
 ```
 
