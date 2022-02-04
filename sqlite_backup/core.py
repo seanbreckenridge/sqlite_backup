@@ -244,8 +244,8 @@ def sqlite_backup(
             conn.backup(target_connection, **sqlite_backup_kwargs)
 
         if destination is not None and wal_checkpoint:
-            with conn:
-                conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+            with target_connection:
+                target_connection.execute("PRAGMA wal_checkpoint(TRUNCATE);")
 
         conn.close()
 
@@ -255,4 +255,5 @@ def sqlite_backup(
     if destination is None:
         return target_connection
     else:
+        target_connection.close()
         return None
