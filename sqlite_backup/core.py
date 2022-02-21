@@ -34,13 +34,15 @@ class SqliteBackupError(RuntimeError):
 
 
 @contextmanager
-def _sqlite_connect_immutable(db: PathIsh) -> Iterator[sqlite3.Connection]:
+def sqlite_connect_immutable(db: PathIsh) -> Iterator[sqlite3.Connection]:
     # https://www.sqlite.org/draft/uri.html#uriimmutable
+    conn: sqlite3.Connection | None = None
     try:
         with sqlite3.connect(f"file:{db}?immutable=1", uri=True) as conn:
             yield conn
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 # https://github.com/karlicoss/promnesia/blob/1b26ccdf9be7c0ac8f8e6e9e4193647450548878/scripts/browser_history.py#L48

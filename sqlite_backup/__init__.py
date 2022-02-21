@@ -1,1 +1,1 @@
-from .core import sqlite_backup
+from .core import sqlite_backup  # noqa

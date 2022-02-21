@@ -75,6 +75,10 @@ Functions
     to the connect (when copying from the source database) and the backup (when copying
     from the source (or database in the tempdir) to the destination
 
+    
+`sqlite_connect_immutable(db: Union[str, pathlib.Path]) ‑> Iterator[sqlite3.Connection]`
+:   
+
 Classes
 -------
 

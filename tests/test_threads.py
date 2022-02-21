@@ -12,7 +12,7 @@ from . import run_in_thread
 
 # a sanity check to make sure that failed assertions
 # in wrapped threads raise errors
-def test_thread_wrapper_none(reraise: Reraise) -> None:
+def test_thread_wrapper_none() -> None:
     def _run_no_wrapper() -> None:
         assert True
 

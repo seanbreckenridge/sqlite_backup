@@ -10,7 +10,7 @@ import pytest
 from pytest_reraise import Reraise  # type: ignore[import]
 
 from sqlite_backup.core import (
-    _sqlite_connect_immutable as sqlite_connect_immutable,
+    sqlite_connect_immutable,
     sqlite_backup,
     atomic_copy,
     SqliteBackupError,
