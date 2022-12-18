@@ -36,7 +36,7 @@ class SqliteBackupError(RuntimeError):
 @contextmanager
 def sqlite_connect_immutable(db: PathIsh) -> Iterator[sqlite3.Connection]:
     # https://www.sqlite.org/draft/uri.html#uriimmutable
-    conn: sqlite3.Connection | None = None
+    conn: Union[sqlite3.Connection, None] = None
     try:
         with sqlite3.connect(f"file:{db}?immutable=1", uri=True) as conn:
             yield conn
