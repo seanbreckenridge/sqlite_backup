@@ -45,7 +45,7 @@ def test_thread_raises(reraise: Reraise) -> None:
     reraise.exception = Exception()
 
     # Return the exception and set reraise.exception to None
-    err = reraise.reset()
+    err = reraise.reset()  # type: ignore
     assert isinstance(err, AssertionError)
     assert "Raised error here" in str(err)
 

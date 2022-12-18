@@ -289,7 +289,7 @@ def test_database_doesnt_exist(tmp_path_f: Path, reraise: Reraise) -> None:
 
     run_in_thread(_run, allow_unwrapped=True)
 
-    err = reraise.reset()
+    err = reraise.reset()  # type: ignore
     assert isinstance(err, FileNotFoundError)
     assert err.filename == db
     assert "No such file or directory" in err.strerror
@@ -315,7 +315,7 @@ def test_copy_retry_strict(sqlite_with_wal: Path, reraise: Reraise) -> None:
 
     run_in_thread(_run, allow_unwrapped=True)
 
-    err = reraise.reset()
+    err = reraise.reset()  # type: ignore
     assert isinstance(err, SqliteBackupError)
     assert (
         "this failed to copy all files without any of them changing 100 times"
@@ -336,7 +336,7 @@ def test_copy_different_source_and_dest(
 
     run_in_thread(_run, allow_unwrapped=True)
 
-    err = reraise.reset()
+    err = reraise.reset()  # type: ignore
     assert isinstance(err, ValueError)
     assert "'source' and 'destination'" in str(err)
     assert "can't be the same" in str(err)
