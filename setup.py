@@ -7,7 +7,7 @@ reqs = Path("requirements.txt").read_text().strip().splitlines()
 pkg = "sqlite_backup"
 setup(
     name=pkg,
-    version="0.1.4",
+    version="0.1.5",
     url="https://github.com/seanbreckenridge/sqlite_backup",
     author="Sean Breckenridge",
     author_email="seanbrecke@gmail.com",
