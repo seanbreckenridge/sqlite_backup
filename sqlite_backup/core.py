@@ -243,6 +243,10 @@ def sqlite_backup(
             f"Running backup, from '{copy_from}' to '{destination or 'memory'}'"
         )
         with sqlite3.connect(copy_from, **sqlite_connect_kwargs) as conn:
+            if copy_use_tempdir:
+                # workaround for leftover wal/shm files on some macos systems
+                # see https://github.com/seanbreckenridge/sqlite_backup/issues/9
+                conn.execute('PRAGMA journal_mode=DELETE')
             conn.backup(target_connection, **sqlite_backup_kwargs)
 
         if destination is not None and wal_checkpoint:
