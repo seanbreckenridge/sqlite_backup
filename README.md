@@ -59,7 +59,7 @@ Options:
                                   False]
 ```
 
-For usage in python, use the `sqlite_backup` function, see the [docs](./docs/sqlite_backup/core.md)
+For usage in python, use the `sqlite_backup` function, see the [docs](./docs/sqlite_backup/index.md)
 
 If you plan on reading from these backed up databases (and you're not planning on modifying these at all), I would recommend using the [`mode=ro`](https://www.sqlite.org/uri.html#urimode) (readonly) or [`immutable`](https://www.sqlite.org/uri.html#uriimmutable) flags when connecting to the database. In python, like:
 
