@@ -2,7 +2,7 @@
 
 This exposes the python stdlib [`sqlite.backup`](https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup) function as a library, with a couple extra steps.
 
-The main purpose for writing this is to copy sqlite databases that you may not own -- perhaps it belongs to an application (your browser) and is locked since that's currently open, or the OS keeps it open while the computer is active (e.g. Mac with iMessage)
+The main purpose for writing this is to copy sqlite databases that you may not own -- perhaps it belongs to an application (e.g., your browser) and is locked since that's currently open, or the OS keeps it open while the computer is active (e.g. Mac with iMessage)
 
 ### Features
 
