@@ -146,16 +146,7 @@ def test_no_copy_use_tempdir(sqlite_with_wal: Path, reraise: Reraise) -> None:
 
     @reraise.wrap
     def _run() -> None:
-        with pytest.warns(UserWarning) as record:
-            conn = sqlite_backup(sqlite_with_wal, copy_use_tempdir=False)
-
-        # make sure this warned the user
-        assert len(record) == 1
-        warning = record[0]
-        assert (
-            "Copying a database in use by another application without copying to a temporary directory"
-            in str(warning.message)
-        )
+        conn = sqlite_backup(sqlite_with_wal, copy_use_tempdir=False)
 
         assert conn is not None
         assert len(list(conn.execute("SELECT * from testtable"))) == 10

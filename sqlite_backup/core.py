@@ -3,7 +3,6 @@ import errno
 import sqlite3
 import filecmp
 import shutil
-import warnings
 
 from typing import (
     Union,
@@ -224,9 +223,6 @@ def sqlite_backup(
             ), f"Expected copied database to exist at {copy_from} in temporary directory"
         else:
             copy_from = source_path
-            warnings.warn(
-                "Copying a database in use by another application without copying to a temporary directory could result in corrupt data or incorrect results. Only use this if you know the underlying database is not being modified"
-            )
 
         target_connection: sqlite3.Connection
         if destination is None:

@@ -96,6 +96,11 @@ def main(
             sys.exit(1)
         dest = destination.absolute()
 
+    if not copy_use_tempdir:
+        click.echo(
+            "Warning: Copying a database in use by another application without copying to a temporary directory could result in corrupt data or incorrect results. Only use this if you know the underlying database is not being modified",
+            err=True,
+        )
     sqlite_backup(
         source_database,
         dest,
