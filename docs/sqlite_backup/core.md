@@ -64,7 +64,7 @@ Functions
     https://www.sqlite.org/c3ref/c_dbconfig_enable_fkey.html
     
     if 'copy_use_tempdir' is False, that skips the copy, which increases the chance that this fails
-    (if theres a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
+    (if there's a lock (SQLITE_BUSY, SQLITE_LOCKED)) on the source database,
     which is what we're trying to avoid in the first place
     
     'copy_retry' (default 100) specifies how many times we should attempt to copy the database files, if they

@@ -121,7 +121,7 @@ def test_do_immutable(sqlite_with_wal: Path, reraise: Reraise) -> None:
     """
     a copy of the database in immutable mode
 
-    *IF* the application changed this query was executing, this has the oppurtunity
+    *IF* the application changed this query was executing, this has the opportunity
     to corrupt or fetch incorrect results -- this only works because
     we control sqlite_with_wal and know its not going to change
 
