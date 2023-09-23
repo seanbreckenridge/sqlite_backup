@@ -88,7 +88,7 @@ def main(
             )
             sys.exit(1)
     else:
-        # doesnt exist, check if parent dir exists
+        # doesn't exist, check if parent dir exists
         if not destination.parent.exists():
             click.echo(
                 f"Parent directory '{destination.parent}' does not exist", err=True

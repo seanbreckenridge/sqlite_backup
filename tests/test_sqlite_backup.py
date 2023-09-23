@@ -84,7 +84,7 @@ def sqlite_with_wal(
 def test_open_asis(sqlite_with_wal: Path, reraise: Reraise) -> None:
     """
     This works, but leaves potential for DB corruption since we have
-    multiple connetions to the same database table on different threads
+    multiple connections to the same database table on different threads
     """
 
     @reraise.wrap
@@ -269,7 +269,7 @@ def test_backup_without_checkpoint(
 
 def test_database_doesnt_exist(tmp_path_f: Path, reraise: Reraise) -> None:
     """
-    basic test to make sure sqlite_backup fails if db doesnt exist
+    basic test to make sure sqlite_backup fails if db doesn't exist
     """
 
     db = str(tmp_path_f / "db.sqlite")
