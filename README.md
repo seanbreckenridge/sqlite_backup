@@ -20,7 +20,7 @@ If other tools exist to do this, please [let me know!](https://github.com/seanbr
 
 ## Installation
 
-Requires `python3.7+`
+Requires `python3.8+`
 
 To install with pip, run:
 
