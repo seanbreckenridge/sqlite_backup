@@ -6,7 +6,7 @@ The main purpose for writing this is to copy sqlite databases that you may not o
 
 ### Features
 
-- Has the option (true by default) to first safely copy the database from disk to a temporary directory, which is:
+- Has the option (true by default) to first [safely copy](https://github.com/seanbreckenridge/sqlite_backup/blob/cbe57a88bc987ca990edfb65b66f04b6d8765a5e/sqlite_backup/core.py#L48-L56) the database from disk to a temporary directory, which is:
   - useful in case the source is in read-only mode (e.g. in some sort of docker container)
   - safer if you're especially worried about corrupting or losing data
 - Uses [`Cpython`s Connection.backup](https://github.com/python/cpython/blob/8fb36494501aad5b0c1d34311c9743c60bb9926c/Modules/_sqlite/connection.c#L1716), which directly uses the [underlying Sqlite C code](https://www.sqlite.org/c3ref/backup_finish.html)
